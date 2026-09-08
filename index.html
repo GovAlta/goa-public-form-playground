@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Must match SERVICE_NAME in src/lib/service.ts. It is a separate copy because
+         the title renders before any JavaScript, which is what a bookmark saves and a
+         search result shows. scripts/readme.test.ts asserts the two stay equal. -->
+    <title>[Service name]</title>
+    <!-- Vite rewrites root-absolute URLs in this file to the deploy's base path, so
+         this resolves correctly in a fork under any repository name. Note that it
+         does NOT rewrite paths inside files copied verbatim from public/, which is
+         why there is no web manifest here: its icon paths would 404 under a subpath. -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- GoA components render icons with ionicons, loaded here rather than bundled. -->
+    <script
+      type="module"
+      src="https://cdn.jsdelivr.net/npm/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"
+    ></script>
+    <script
+      nomodule
+      src="https://cdn.jsdelivr.net/npm/ionicons@5.5.2/dist/ionicons/ionicons.js"
+    ></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/index.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,83 @@
+/*
+ * Design system wiring. Two imports, and BOTH THE PRESENCE AND THE ORDER OF THE SECOND
+ * ONE ARE LOAD-BEARING. Neither is obvious, and getting either wrong fails silently.
+ *
+ * WHY THE SECOND IMPORT IS REQUIRED. web-components does not carry every token it
+ * uses. Measured against the installed packages: it consumes 1129 `--goa-*` tokens and
+ * declares 818, so 432 come from somewhere else, and design-tokens supplies 427 of
+ * them. They are the component-level ones (`--goa-app-header-*`, `--goa-accordion-*`),
+ * which is to say the values this app's own header and callouts render from. Drop this
+ * import and those resolve to nothing: no error, no warning, just components quietly
+ * rendering without their own spacing and colour.
+ *
+ * WHY THE ORDER IS LOAD-BEARING. 692 tokens are declared by both packages and 313 of
+ * them DISAGREE — `--goa-app-header-max-width-service-name` is 28rem in one and 40rem
+ * in the other, and there are 312 more like it. Later declaration wins, so
+ * design-tokens has to come second. Swap these two lines and 313 values change with
+ * nothing to tell you. The monorepo has the same trap pointing the other way: a stale
+ * web-components stylesheet overriding the newer tokens is a known bug there.
+ *
+ * WHEN TO DELETE THE SECOND IMPORT. When web-components ships the tokens itself. That
+ * is what GovAlta/ui-components#4259 does ("make version 2 the permanent version"),
+ * still open as of 2026-09-01: it folds design-tokens into web-components' own
+ * index.css. Once you are on a version that includes it, this second import stops
+ * being the fix and becomes the hazard — a separately versioned copy of the same
+ * tokens, overriding the bundled ones. Check before you delete: if
+ * `--goa-app-header-padding-v` is declared inside web-components/index.css, the fold
+ * has happened.
+ */
+@import "@abgov/web-components/index.css";
+@import "@abgov/design-tokens/dist/tokens.css";
+
+/*
+ * Everything below is this application's own CSS.
+ *
+ * The component library forbids custom CSS. A template does not, and that difference
+ * is deliberate. Real services need layout, rhythm and interaction states the library
+ * does not ship. The rule that keeps it honest: customise through GoA custom
+ * properties in a scope, never by restyling a component's internals.
+ */
+
+body {
+  margin: 0;
+}
+
+/* Task list rows. Inline styles cannot express :hover or :focus-visible, which is
+   why the task row needs real CSS rather than a style attribute. */
+.pf-task-row {
+  transition: background-color 0.12s ease;
+}
+
+.pf-task-row:hover,
+.pf-task-row:focus-visible {
+  background-color: var(--goa-color-greyscale-100);
+}
+
+.pf-task-row:hover .pf-task-name,
+.pf-task-row:focus-visible .pf-task-name {
+  text-decoration: underline;
+}
+
+/*
+ * Text that is announced but not shown.
+ *
+ * Used for the part of a Change link that names its target. Not display:none and not
+ * visibility:hidden — both of those remove the text from the accessibility tree too,
+ * which would defeat the entire point. The element stays in the layout at one pixel,
+ * clipped to nothing.
+ *
+ * Reach for this rarely. Text that only some people receive is a maintenance burden
+ * and a place for the two versions to drift apart. It earns itself here because the
+ * visual form and the spoken form of the same link genuinely want different lengths.
+ */
+.pf-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
