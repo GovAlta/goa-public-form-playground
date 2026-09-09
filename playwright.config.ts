@@ -1,11 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-/**
- * Browser tests for this template.
- *
- * One spec, deliberately. See e2e/smoke.spec.ts for what it covers and why those
- * three things and nothing else.
- */
+/** One spec, deliberately: see e2e/smoke.spec.ts. */
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
@@ -15,7 +10,6 @@ export default defineConfig({
 
   use: {
     baseURL: "http://localhost:5173",
-    // Kept on retry only. A trace per run is a lot of disk for a suite this small.
     trace: "on-first-retry",
   },
 

@@ -1,15 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import { GoabButton, GoabButtonGroup, GoabText } from "@abgov/react-components";
-import { ResultsPage, ResultContactSection } from "../components/results-page";
-import { useForm } from "../store/form-store";
-import { screenerOutcome } from "../lib/eligibility";
+import { ResultsPage, ResultContactSection } from "../../components/results-page";
+import { useForm } from "../../store/form-store";
+import { screenerOutcome } from "./rules";
 
 /**
- * The end of the road for someone the screener rules out.
- *
- * Two things this page owes them. It says which answer decided it, so the outcome is
- * not a mystery, and it offers a way back, because people mistype and misread and a
- * dead end with no exit is how a service loses someone who did qualify.
+ * The screener ruled them out. Says which answer decided it, and offers a way back,
+ * because people mistype and a dead end with no exit loses someone who did qualify.
  */
 export function NotEligible() {
   const navigate = useNavigate();

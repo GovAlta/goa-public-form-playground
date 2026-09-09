@@ -1,15 +1,3 @@
-/**
- * Turning stored answers into the words shown back to a person.
- *
- * Every review page needs this and it is easy to skip, because while the answers are
- * hardcoded the formatting looks like it is already done. The moment answers are
- * real, a date stops being "1 January 1990" and becomes "1990-01-01", a yes/no
- * becomes "yes", and a file becomes an object.
- *
- * Formatting lives here rather than in each page so that a date reads the same on
- * the review page, in a confirmation email and in a caseworker's queue.
- */
-
 const MONTHS = [
   "January",
   "February",
@@ -26,15 +14,9 @@ const MONTHS = [
 ];
 
 /**
- * "1990-01-01" becomes "1 January 1990".
- *
- * The date is split by hand rather than passed to `new Date(iso)`, and that is not
- * fussiness. `new Date("1990-01-01")` is parsed as midnight UTC, which in Alberta is
- * the evening of 31 December 1989. Formatting it in local time then shows the wrong
- * day, and only for people west of Greenwich, which is every user of this service.
- *
- * A date of birth has no time and no timezone. Treating it as text avoids inventing
- * either.
+ * "1990-01-01" becomes "1 January 1990". Split by hand rather than `new Date(iso)`,
+ * which parses as midnight UTC and shows the previous day anywhere west of Greenwich.
+ * A date of birth has no time and no timezone.
  */
 export function formatDate(value: string | undefined | null): string {
   if (!value) return "";
@@ -49,14 +31,12 @@ export function formatDate(value: string | undefined | null): string {
   return `${Number(day)} ${monthName} ${year}`;
 }
 
-/** "yes" becomes "Yes". Anything unrecognised comes back untouched. */
 export function formatYesNo(value: string | undefined | null): string {
   if (value === "yes") return "Yes";
   if (value === "no") return "No";
   return value ?? "";
 }
 
-/** Digits become "780 123 4567". Anything that is not ten digits is left alone. */
 export function formatPhone(value: string | undefined | null): string {
   if (!value) return "";
   const digits = value.replace(/\D/g, "");
@@ -64,14 +44,12 @@ export function formatPhone(value: string | undefined | null): string {
   return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
 }
 
-/** Bytes become "2.4 MB". Sizes are shown so people can tell which file is which. */
 export function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} bytes`;
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-/** ["a", "b", "c"] becomes "a, b and c". */
 export function formatList(items: string[]): string {
   const kept = items.filter((item) => item.trim() !== "");
   if (kept.length === 0) return "";
@@ -79,12 +57,6 @@ export function formatList(items: string[]): string {
   return `${kept.slice(0, -1).join(", ")} and ${kept[kept.length - 1]}`;
 }
 
-/**
- * The parts of an address, in the order they would be written on an envelope.
- *
- * Returns lines rather than one joined string so the caller decides how to break
- * them. A review row wants them stacked; a confirmation email may want them inline.
- */
 export function formatAddressLines(address: {
   street?: string;
   suite?: string;

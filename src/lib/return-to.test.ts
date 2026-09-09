@@ -10,8 +10,7 @@ describe("readReturnTo", () => {
   });
 
   it("ignores an origin the section has no page for", () => {
-    // Your children has no task-level check page of its own; its list is that page.
-    // A stale URL naming one must read as a normal run, not as an unresolvable target.
+    // Your children has no task-level check page; its list is that page.
     expect(readReturnTo(params("?from=task"), ["child"])).toBeNull();
   });
 
@@ -38,10 +37,8 @@ describe("withReturnTo", () => {
   });
 
   it("appends rather than starting a second query string", () => {
-    // Nothing in this template puts a second parameter on a question page yet. The
-    // day something does, the naive `${path}?from=` would produce two `?` and the
-    // origin would be unreadable — a failure that shows up as a back link silently
-    // going to the wrong place.
+    // Nothing puts a second parameter on a question page yet; the day something does,
+    // a naive ?from= would be unreadable.
     expect(withReturnTo("/documents/other-income?tab=2", "review")).toBe(
       "/documents/other-income?tab=2&from=review",
     );

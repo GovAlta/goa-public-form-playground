@@ -3,14 +3,8 @@ import { EMPTY_FORM } from "../lib/form-state";
 import { submitApplication } from "./submission";
 
 /**
- * The stand-in submit, tested for the one property that is a promise to the person
- * rather than an implementation detail: a reference they can read out over the phone
- * and type back in without losing anything.
- *
- * Note what these tests do NOT pin down: the prefix itself. It ships as ABC and every
- * fork is expected to change it, so asserting the literal string would hand a forking
- * team a failing test on day one for doing the right thing. A test in a template
- * should assert the contract a fork has to keep, not the values a fork will replace.
+ * The reference's contract, not its prefix: ABC is a fork's to replace, so nothing here
+ * pins it.
  */
 
 const AMBIGUOUS = ["O", "0", "I", "1", "L", "S", "5", "B", "8", "Z", "2"];
@@ -33,16 +27,9 @@ describe("the application reference", () => {
     const drawn = await Promise.all(
       Array.from({ length: 200 }, () => submitApplication(EMPTY_FORM)),
     );
-    // The prefix is stripped rather than measured. It is a fixed string a fork chooses,
-    // so it says nothing about the generated alphabet, and this template's own ABC
-    // would fail the check below on its B.
     const characters = new Set(drawn.flatMap((r) => body(r.reference).split("")));
 
-    // The guard against passing for the wrong reason. If generation ever returned a
-    // constant, or an empty string, the check below would be true of nothing at all
-    // and this test would report success while measuring no letters. 200 draws over
-    // a 25 character alphabet reach nearly all of it; 15 is a floor well clear of
-    // chance and well under the real number.
+    // A floor, so a constant or empty reference cannot pass the loop below vacuously.
     expect(characters.size).toBeGreaterThan(15);
 
     for (const ambiguous of AMBIGUOUS) {

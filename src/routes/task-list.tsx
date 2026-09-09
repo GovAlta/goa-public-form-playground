@@ -14,12 +14,8 @@ import {
 } from "../lib/sections";
 
 /**
- * The task list: what is left to do, and what has been done.
- *
- * Every status on this page is worked out from the answers themselves, in
- * lib/sections.ts. Nothing here is decorative. That matters more than it sounds:
- * a task list whose statuses do not move is worse than no task list, because it
- * tells a person their work was not saved.
+ * The task list. Every status is worked out from the answers, in lib/sections.ts; a
+ * status that does not move tells a person their work was not saved.
  */
 
 function StatusBadge({ status }: { status: SectionStatus }) {
@@ -52,10 +48,8 @@ function TaskRow({ section, index }: { section: Section; index: number }) {
   const status = sectionStatus(section, state);
   const locked = status === "cannot-start";
 
-  // A locked row is deliberately not a link, and carries no status badge. Making it
-  // look clickable and then refusing the click is worse than plainly showing it is
-  // not available. A badge saying "cannot start" would only label the problem; the
-  // group's note above says what to do about it, which is the part that helps.
+  // A locked row is not a link and carries no badge: looking clickable and refusing
+  // the click is worse than plainly not being available. The group's note says what to do.
   if (locked) {
     return (
       <div style={{ ...rowStyle(index === 0), color: "var(--goa-color-text-secondary)" }}>
@@ -137,7 +131,9 @@ export function TaskList() {
 
       <GoabCallout
         type={ready ? "success" : "information"}
-        heading={ready ? "Ready to submit" : `You have completed ${done} of ${total} sections`}
+        heading={
+          ready ? "Ready to submit" : `You have completed ${done} of ${total} sections`
+        }
         mt="l"
         mb="xl"
       >
@@ -156,19 +152,9 @@ export function TaskList() {
       ))}
 
       {/*
-        Live whether or not the application is finished, and this was changed from
-        disabled deliberately.
-
-        A greyed-out button tells nobody why it is greyed out. It cannot be focused,
-        so a person moving through the page by keyboard or screen reader meets nothing
-        at all where the main action should be, and to everyone else it reads as
-        broken rather than as blocked. The explanation has to live somewhere a person
-        who wants to submit will actually arrive at, so it lives on the page they
-        reach by pressing this: what is unfinished, by name, each one a link.
-
-        The label says what pressing it does rather than what the person is ultimately
-        here for, and it is the review page's own heading, so nobody arrives somewhere
-        that does not match the link they clicked.
+        Live whether or not the application is finished, changed from disabled on
+        purpose: a greyed-out button cannot be focused and tells nobody why. The review
+        page explains what is left. The label is the review page's own heading.
       */}
       <GoabButton type="primary" mt="l" onClick={() => navigate("/review")}>
         Check your answers

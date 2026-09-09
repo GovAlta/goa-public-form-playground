@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { ChildRecord } from "./form-state";
+import type { ChildRecord } from "../../lib/form-state";
 import {
   CHILD_STEPS,
   CHILD_STEP_IDS,
@@ -15,9 +15,8 @@ import {
   pruneChild,
   reachableChildSteps,
   resolveNextChildStep,
-} from "./your-children";
+} from "./rules";
 
-/** A child who lives with the applicant: the short path through the sub-flow. */
 const LIVES_WITH: ChildRecord = {
   id: "c1",
   firstName: "Ava",
@@ -26,7 +25,6 @@ const LIVES_WITH: ChildRecord = {
   livesWithYou: "yes",
 };
 
-/** A child who does not: the long path, where the extra question is asked. */
 const LIVES_ELSEWHERE: ChildRecord = {
   id: "c2",
   firstName: "Noor",
@@ -57,22 +55,26 @@ describe("the sub-flow's shape", () => {
   });
 
   it("walks back through the path actually taken, not the declared order", () => {
-    // living-arrangement is skipped on the short path, so the page before the
-    // check for a child who lives with you is lives-with-you.
-    expect(previousChildStep("living-arrangement", LIVES_ELSEWHERE)).toBe("lives-with-you");
+    expect(previousChildStep("living-arrangement", LIVES_ELSEWHERE)).toBe(
+      "lives-with-you",
+    );
     expect(previousChildStep("date-of-birth", LIVES_WITH)).toBe("name");
     expect(previousChildStep("name", LIVES_WITH)).toBeNull();
   });
 
   it("personalises each heading once the child has a name", () => {
     expect(CHILD_STEPS["date-of-birth"].heading(LIVES_WITH)).toContain("Ava");
-    expect(CHILD_STEPS["date-of-birth"].heading(emptyChild("x"))).not.toContain("undefined");
+    expect(CHILD_STEPS["date-of-birth"].heading(emptyChild("x"))).not.toContain(
+      "undefined",
+    );
   });
 });
 
 describe("the branch", () => {
   it("skips the living arrangement when the child lives with you", () => {
-    expect(resolveNextChildStep("lives-with-you", LIVES_WITH)).toEqual({ outcome: "done" });
+    expect(resolveNextChildStep("lives-with-you", LIVES_WITH)).toEqual({
+      outcome: "done",
+    });
   });
 
   it("asks the living arrangement when the child does not", () => {
@@ -89,15 +91,14 @@ describe("the branch", () => {
   });
 
   it("skips questions already answered, so a change goes straight back to the check", () => {
-    // Someone changes the name from the check page. Nothing after it is newly
-    // opened, so they should not be walked through the whole sub-flow again.
     expect(resolveNextChildStep("name", LIVES_WITH)).toEqual({ outcome: "done" });
   });
 
   it("stops at what a changed answer newly opened", () => {
-    // yes -> no re-opens the living arrangement, which has never been answered.
     const flipped: ChildRecord = { ...LIVES_WITH, livesWithYou: "no" };
-    expect(resolveNextChildStep("name", flipped)).toEqual({ question: "living-arrangement" });
+    expect(resolveNextChildStep("name", flipped)).toEqual({
+      question: "living-arrangement",
+    });
   });
 
   it("counts only the steps on the path actually taken", () => {
@@ -135,7 +136,9 @@ describe("when a child counts as finished", () => {
   });
 
   it("is unfinished while the branch it opened is unanswered", () => {
-    expect(isChildComplete({ ...LIVES_ELSEWHERE, livingArrangement: undefined })).toBe(false);
+    expect(isChildComplete({ ...LIVES_ELSEWHERE, livingArrangement: undefined })).toBe(
+      false,
+    );
   });
 
   it("is unfinished the moment it is added", () => {
@@ -151,15 +154,20 @@ describe("when a child counts as finished", () => {
 
   it("rejects a birth date in the future, the same as the applicant's own", () => {
     const nextYear = `${new Date().getFullYear() + 1}-01-01`;
-    expect(isChildStepComplete("date-of-birth", { ...LIVES_WITH, dateOfBirth: nextYear })).toBe(
-      false,
-    );
+    expect(
+      isChildStepComplete("date-of-birth", { ...LIVES_WITH, dateOfBirth: nextYear }),
+    ).toBe(false);
   });
 
   it("resumes at the first question still needing an answer", () => {
     expect(firstIncompleteChildStep(emptyChild("new"))).toBe("name");
-    expect(firstIncompleteChildStep({ ...emptyChild("new"), firstName: "Ava", lastName: "Chen" }))
-      .toBe("date-of-birth");
+    expect(
+      firstIncompleteChildStep({
+        ...emptyChild("new"),
+        firstName: "Ava",
+        lastName: "Chen",
+      }),
+    ).toBe("date-of-birth");
     expect(firstIncompleteChildStep(LIVES_WITH)).toBeNull();
   });
 });
@@ -184,8 +192,6 @@ describe("naming a child in the list", () => {
   });
 
   it("still names a child who has only been half added", () => {
-    // A child added and abandoned mid-flow has to be identifiable, or the row
-    // offering Change and Remove is unusable.
     expect(childLabel(emptyChild("new"))).toBe("Child with no name yet");
     expect(childLabel({ ...emptyChild("new"), firstName: "Ava" })).toBe("Ava");
   });
@@ -193,8 +199,6 @@ describe("naming a child in the list", () => {
 
 describe("what the pages collect between them", () => {
   it("covers every field the pages collect, so no answer is unreachable", () => {
-    // The guard that matters: add a field to ChildRecord, forget to put it on a
-    // page, and the review page would show an answer with nowhere to change it.
     const onPages = CHILD_STEP_IDS.flatMap((id) => CHILD_STEPS[id].fields);
     expect(onPages).toEqual([
       "firstName",

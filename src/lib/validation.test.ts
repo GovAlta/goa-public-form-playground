@@ -55,8 +55,7 @@ describe("pattern", () => {
 });
 
 describe("when", () => {
-  // A revealed question that is not showing must never block submission. Its error
-  // would be invisible, leaving the person stuck on a page that looks complete.
+  // A revealed question that is not showing must never block submission.
   it("skips the rule when the condition is false", () => {
     const rule = when((all) => all.hasOther === "yes", required("Say which"));
     expect(rule("", { hasOther: "no" })).toBeNull();

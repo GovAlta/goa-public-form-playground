@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { runSchema } from "./validation";
-import type { AboutYouAnswers } from "./form-state";
+import { runSchema } from "../../lib/validation";
+import type { AboutYouAnswers } from "../../lib/form-state";
 import {
   ABOUT_YOU_STEPS,
   ABOUT_YOU_STEP_IDS,
@@ -12,9 +12,8 @@ import {
   previousStep,
   stepForField,
   type AboutYouStepId,
-} from "./about-you";
+} from "./rules";
 
-/** Everything answered, so a test can knock out one thing at a time. */
 const COMPLETE: AboutYouAnswers = {
   firstName: "Ada",
   lastName: "Lovelace",
@@ -29,7 +28,9 @@ const COMPLETE: AboutYouAnswers = {
 };
 
 const errorsFor = (step: AboutYouStepId, answers: AboutYouAnswers) =>
-  runSchema(ABOUT_YOU_STEPS[step].schema, answers as Record<string, unknown>).map((e) => e.text);
+  runSchema(ABOUT_YOU_STEPS[step].schema, answers as Record<string, unknown>).map(
+    (e) => e.text,
+  );
 
 describe("the section's shape", () => {
   it("is four pages in order", () => {
@@ -100,7 +101,9 @@ describe("firstIncompleteStep", () => {
   });
 
   it("skips the pages already answered", () => {
-    expect(firstIncompleteStep({ firstName: "Ada", lastName: "Lovelace" })).toBe("date-of-birth");
+    expect(firstIncompleteStep({ firstName: "Ada", lastName: "Lovelace" })).toBe(
+      "date-of-birth",
+    );
   });
 
   it("does not stop at a page whose only gap is optional", () => {
@@ -109,20 +112,23 @@ describe("firstIncompleteStep", () => {
   });
 
   it("is null when there is nothing left to finish", () => {
-    // Not the first page. A finished section has somewhere better to send someone
-    // than back to its first question, and the caller can only choose it if the
-    // walker says "nothing left" rather than naming a page.
+    // Null rather than the first page: a finished section is sent to its check page.
     expect(firstIncompleteStep(COMPLETE)).toBeNull();
   });
 });
 
 describe("name", () => {
   it("asks for both parts", () => {
-    expect(errorsFor("name", {})).toEqual(["Enter your first name", "Enter your last name"]);
+    expect(errorsFor("name", {})).toEqual([
+      "Enter your first name",
+      "Enter your last name",
+    ]);
   });
 
   it("reports errors in the order the fields appear, so the summary reads top to bottom", () => {
-    expect(errorsFor("name", { lastName: "Lovelace" })).toEqual(["Enter your first name"]);
+    expect(errorsFor("name", { lastName: "Lovelace" })).toEqual([
+      "Enter your first name",
+    ]);
   });
 });
 
@@ -132,8 +138,7 @@ describe("date of birth", () => {
   });
 
   // No "not a real date" case: the control reports missing, partial and impossible
-  // dates as the same empty value, so such a rule could never run. See the note in
-  // about-you.ts. When the picker exposes partial input, these tests come back.
+  // dates as the same empty value, so such a rule could never run.
   it("says only that it is missing when the control reports nothing", () => {
     expect(errorsFor("date-of-birth", { dateOfBirth: "" })).toEqual([
       "Enter your date of birth",
@@ -164,10 +169,11 @@ describe("date of birth", () => {
     expect(errorsFor("date-of-birth", { dateOfBirth: "1985-03-27" })).toEqual([]);
   });
 
-  // A date control is entitled to hand back a full timestamp. A birthday that arrives
-  // with a time on it is a correctly answered question, not a malformed one.
+  // A date control may hand back a full timestamp; that is a correctly answered question.
   it("accepts a date carrying a time portion", () => {
-    expect(errorsFor("date-of-birth", { dateOfBirth: "1985-03-27T00:00:00.000Z" })).toEqual([]);
+    expect(
+      errorsFor("date-of-birth", { dateOfBirth: "1985-03-27T00:00:00.000Z" }),
+    ).toEqual([]);
   });
 
   it("does not read today-with-a-time as being in the future", () => {
@@ -177,7 +183,9 @@ describe("date of birth", () => {
       String(now.getMonth() + 1).padStart(2, "0"),
       String(now.getDate()).padStart(2, "0"),
     ].join("-");
-    expect(errorsFor("date-of-birth", { dateOfBirth: `${today}T23:59:59.000Z` })).toEqual([]);
+    expect(errorsFor("date-of-birth", { dateOfBirth: `${today}T23:59:59.000Z` })).toEqual(
+      [],
+    );
   });
 
   it("accepts 29 February in a leap year", () => {
@@ -193,7 +201,12 @@ describe("contact", () => {
   });
 
   it("forgives how people actually punctuate a phone number", () => {
-    for (const written of ["780 123 4567", "780-123-4567", "(780) 123-4567", "+1 780 123 4567"]) {
+    for (const written of [
+      "780 123 4567",
+      "780-123-4567",
+      "(780) 123-4567",
+      "+1 780 123 4567",
+    ]) {
       expect(contactErrors({ phone: written })).toEqual([]);
     }
   });

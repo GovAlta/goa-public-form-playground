@@ -8,43 +8,36 @@ import "@abgov/web-components";
 import { App } from "./App";
 import { FormProvider } from "./store/form-store";
 import { TaskList } from "./routes/task-list";
-import { EligibilitySection } from "./routes/eligibility/eligibility-section";
-import { AboutYouSection } from "./routes/about-you/about-you-section";
-import { YourChildrenSection } from "./routes/your-children/your-children-section";
-import { DocumentsSection } from "./routes/documents/documents-section";
-import { NotEligible } from "./routes/not-eligible";
+import { EligibilitySection } from "./sections/eligibility/pages";
+import { AboutYouSection } from "./sections/about-you/pages";
+import { YourChildrenSection } from "./sections/your-children/pages";
+import { DocumentsSection } from "./sections/documents/pages";
+import { NotEligible } from "./sections/eligibility/not-eligible";
 import { EditableOnly, UnlockedOnly } from "./routes/guards";
-import { ReviewPage } from "./routes/review/review-page";
-import { ConfirmationPage } from "./routes/review/confirmation-page";
+import { ReviewPage } from "./routes/review-page";
+import { ConfirmationPage } from "./routes/confirmation-page";
 
 import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    {/*
-      basename comes from the same value CI wrote into VITE_BASE_PATH, so the router
-      and the asset paths can never disagree. This is why a fork needs no edits.
-    */}
+    {/* basename is the value CI wrote into VITE_BASE_PATH, so the router and the asset
+        paths never disagree and a fork needs no edits. */}
     <BrowserRouter
       basename={import.meta.env.BASE_URL.replace(/\/$/, "")}
-      // Opt in to the v7 behaviours now. A template that starts life printing
-      // deprecation warnings teaches every fork to ignore its own console.
+      // v7 behaviours opted into now, so a fork does not start life with deprecation warnings.
       future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
     >
       <FormProvider>
         <Routes>
           <Route path="/" element={<App />}>
-            {/*
-              Everything inside this closes the moment the application is submitted:
-              the answers become a record rather than a draft. Adding a question page
-              means adding it here, and it inherits the rule by being in the group.
-            */}
+            {/* Everything inside closes the moment the application is submitted. A new
+                question page goes here and inherits the rule. */}
             <Route element={<EditableOnly />}>
               <Route index element={<TaskList />} />
 
-              {/* And inside that, the sections the screener gates. The task list and
-                  the review page sit outside it: they are how a person finds out
-                  what is shut and why, so they must stay reachable. */}
+              {/* The sections the screener gates. The task list and the review stay outside:
+                  they are how a person finds out what is shut and why. */}
               <Route element={<UnlockedOnly />}>
                 <Route path="eligibility/*" element={<EligibilitySection />} />
                 <Route path="about-you/*" element={<AboutYouSection />} />

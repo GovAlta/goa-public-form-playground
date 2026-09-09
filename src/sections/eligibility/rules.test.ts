@@ -6,8 +6,8 @@ import {
   remainingQuestions,
   screenerOutcome,
   firstUnansweredStep,
-} from "./eligibility";
-import type { EligibilityAnswers } from "./form-state";
+} from "./rules";
+import type { EligibilityAnswers } from "../../lib/form-state";
 
 describe("walking forward", () => {
   it("goes to the next question when the gate is passed", () => {
@@ -25,13 +25,23 @@ describe("walking forward", () => {
   });
 
   it("skips the follow-up when the answer does not call for it", () => {
-    const answers: EligibilityAnswers = { age: "yes", residency: "yes", otherSupport: "no" };
+    const answers: EligibilityAnswers = {
+      age: "yes",
+      residency: "yes",
+      otherSupport: "no",
+    };
     expect(resolveNext("otherSupport", answers)).toEqual({ outcome: "review" });
   });
 
   it("opens the follow-up when the answer does call for it", () => {
-    const answers: EligibilityAnswers = { age: "yes", residency: "yes", otherSupport: "yes" };
-    expect(resolveNext("otherSupport", answers)).toEqual({ question: "otherSupportDetail" });
+    const answers: EligibilityAnswers = {
+      age: "yes",
+      residency: "yes",
+      otherSupport: "yes",
+    };
+    expect(resolveNext("otherSupport", answers)).toEqual({
+      question: "otherSupportDetail",
+    });
   });
 });
 
@@ -43,27 +53,27 @@ describe("changing an answer from the review page", () => {
   };
 
   it("goes straight back to review when the change opens nothing new", () => {
-    // Re-confirming an answer they had already given. Everything downstream is
-    // still answered, so there is nothing to ask again.
     expect(resolveNext("age", completed)).toEqual({ outcome: "review" });
   });
 
   it("stops at the newly opened question when a change reveals one", () => {
-    // They change "receiving other support" from no to yes. The detail question
-    // now exists and has never been answered, so that is where they land.
     const changed: EligibilityAnswers = { ...completed, otherSupport: "yes" };
-    expect(resolveNext("otherSupport", changed)).toEqual({ question: "otherSupportDetail" });
+    expect(resolveNext("otherSupport", changed)).toEqual({
+      question: "otherSupportDetail",
+    });
   });
 
   it("routes to a different outcome when a change flips a gate", () => {
-    // They change their age answer to no. Everything after it is now irrelevant
-    // and they are no longer eligible, however much they had already filled in.
     const changed: EligibilityAnswers = { ...completed, age: "no" };
     expect(resolveNext("age", changed)).toEqual({ outcome: "ineligible" });
   });
 
   it("counts the questions a change newly opened", () => {
-    const changed: EligibilityAnswers = { age: "yes", residency: "yes", otherSupport: "yes" };
+    const changed: EligibilityAnswers = {
+      age: "yes",
+      residency: "yes",
+      otherSupport: "yes",
+    };
     expect(remainingQuestions("otherSupport", changed)).toBe(1);
   });
 
@@ -74,7 +84,11 @@ describe("changing an answer from the review page", () => {
 
 describe("reachable", () => {
   it("includes only the steps on the answered path", () => {
-    const answers: EligibilityAnswers = { age: "yes", residency: "yes", otherSupport: "no" };
+    const answers: EligibilityAnswers = {
+      age: "yes",
+      residency: "yes",
+      otherSupport: "no",
+    };
     expect([...reachable(answers)]).toEqual(["age", "residency", "otherSupport"]);
   });
 
@@ -89,8 +103,6 @@ describe("reachable", () => {
 
 describe("pruneUnreachable", () => {
   it("drops an answer to a question the current path no longer asks", () => {
-    // They named a program, then said they are not receiving support after all.
-    // The name must not survive, or it reappears on the review page.
     const answers: EligibilityAnswers = {
       age: "yes",
       residency: "yes",
@@ -139,13 +151,21 @@ describe("screenerOutcome", () => {
   });
 
   it("is review when the whole screener passed", () => {
-    expect(screenerOutcome({ age: "yes", residency: "yes", otherSupport: "no" })).toBe("review");
+    expect(screenerOutcome({ age: "yes", residency: "yes", otherSupport: "no" })).toBe(
+      "review",
+    );
   });
 
   it("requires the follow-up before it counts as finished", () => {
-    const answers: EligibilityAnswers = { age: "yes", residency: "yes", otherSupport: "yes" };
+    const answers: EligibilityAnswers = {
+      age: "yes",
+      residency: "yes",
+      otherSupport: "yes",
+    };
     expect(screenerOutcome(answers)).toBeNull();
-    expect(screenerOutcome({ ...answers, otherSupportDetail: "Some program" })).toBe("review");
+    expect(screenerOutcome({ ...answers, otherSupportDetail: "Some program" })).toBe(
+      "review",
+    );
   });
 });
 
@@ -160,23 +180,22 @@ describe("where someone re-entering the screener lands", () => {
   });
 
   it("goes to a follow-up that the answers actually opened", () => {
-    const answers: EligibilityAnswers = { age: "yes", residency: "yes", otherSupport: "yes" };
+    const answers: EligibilityAnswers = {
+      age: "yes",
+      residency: "yes",
+      otherSupport: "yes",
+    };
     expect(firstUnansweredStep(answers)).toBe("otherSupportDetail");
   });
 
-  /*
-   * The case the old entry point got wrong, and the reason this function exists.
-   *
-   * Saying no to the other-support question ends the screener: the follow-up asking
-   * which program is supporting you is never reached. It is also, therefore, never
-   * answered — so anything scanning the questions in declaration order finds it
-   * "unanswered" and sends the person to it. They then get asked which program is
-   * supporting them immediately after saying that none is.
-   *
-   * Unanswered and unasked look identical unless you walk the branches.
-   */
+  // Unanswered and unasked look identical unless you walk the branches: saying no ends
+  // the screener, and the follow-up is never asked.
   it("is finished when the path ends, even though a question off the path is unanswered", () => {
-    const answers: EligibilityAnswers = { age: "yes", residency: "yes", otherSupport: "no" };
+    const answers: EligibilityAnswers = {
+      age: "yes",
+      residency: "yes",
+      otherSupport: "no",
+    };
     expect(answers.otherSupportDetail).toBeUndefined();
     expect(firstUnansweredStep(answers)).toBeNull();
   });

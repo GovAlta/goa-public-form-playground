@@ -17,9 +17,7 @@ describe("formatDate", () => {
     expect(formatDate("2024-03-07")).toBe("7 March 2024");
   });
 
-  // The reason this function exists rather than calling new Date(iso).
-  // new Date("1990-01-01") is midnight UTC, which is 31 December 1989 in Alberta,
-  // so any local formatting of it shows the wrong day for every user of this service.
+  // new Date("1990-01-01") is midnight UTC, which is 31 December 1989 in Alberta.
   it("does not shift the date backwards in a timezone behind UTC", () => {
     expect(formatDate("1990-01-01")).not.toContain("December");
     expect(formatDate("1990-01-01")).not.toContain("1989");
@@ -117,8 +115,7 @@ describe("formatAddressLines", () => {
     ).toEqual(["123 Main Street", "Edmonton, Alberta", "T5J 2N9"]);
   });
 
-  // Canada Post puts the unit ahead of the street number on the same line. A suite on
-  // its own line reads as a second address, which is how mail goes to the wrong place.
+  // Canada Post puts the unit ahead of the street number on the same line.
   it("joins a suite to the street line rather than giving it its own", () => {
     expect(
       formatAddressLines({
@@ -138,7 +135,10 @@ describe("formatAddressLines", () => {
   });
 
   it("does not leave a dangling separator when a suite arrives without a street", () => {
-    expect(formatAddressLines({ suite: "1200", city: "Edmonton" })).toEqual(["1200", "Edmonton"]);
+    expect(formatAddressLines({ suite: "1200", city: "Edmonton" })).toEqual([
+      "1200",
+      "Edmonton",
+    ]);
   });
 
   it("omits missing parts instead of leaving blank lines", () => {

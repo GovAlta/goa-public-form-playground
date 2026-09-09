@@ -9,7 +9,7 @@ import {
 } from "@abgov/react-components";
 import { PublicFormLayout } from "../../components/public-form-layout";
 import { TaskReview } from "../../components/task-review";
-import { AboutYouSummary } from "../review/summaries";
+import { AboutYouSummary } from "./summary";
 import { FormSet } from "../../components/form-set";
 import { useFormValidation } from "../../components/use-form-validation";
 import {
@@ -20,34 +20,26 @@ import {
   previousStep,
   type AboutYouField,
   type AboutYouStepId,
-} from "../../lib/about-you";
+} from "./rules";
 import type { AboutYouAnswers } from "../../lib/form-state";
-import { RETURN_LABELS, readReturnTo, withReturnTo, type ReturnTo } from "../../lib/return-to";
+import {
+  RETURN_LABELS,
+  readReturnTo,
+  withReturnTo,
+  type ReturnTo,
+} from "../../lib/return-to";
 import { useForm } from "../../store/form-store";
 
 /**
- * About you: name, date of birth, contact, address.
- *
- * Four hand-written pages rather than one page driven from config, which is the
- * opposite of the screener next door. The screener's questions are all the same shape
- * — a yes/no or a text box — so one component renders all of them from data. These
- * four are genuinely different controls, and a registry that could render all of them
- * would be more machinery than the four pages it replaced, in the file a person
- * forking this template is most likely to edit.
- *
- * It buys a second thing for free. The screener needed an explicit `key` to force a
- * remount between questions, because React Router reuses one component instance when
- * only a route parameter changes, and the previous answer was carrying into the next
- * question. Four distinct components on four explicit routes cannot have that bug:
- * React unmounts one and mounts the other because they are different elements.
+ * About you: name, date of birth, contact, address. Four hand-written pages rather than
+ * one page driven from config, unlike the screener: these are four different controls,
+ * and a renderer for all of them would be more machinery than the pages it replaced.
  */
 
 const SECTION_ROOT = "/about-you";
 
-/** This task's own check-answers page: where the section finishes. */
 export const ABOUT_YOU_CHECK_PATH = `${SECTION_ROOT}/check`;
 
-/** The two pages a question here can be reached from. See lib/return-to.ts. */
 const RETURN_PATHS = {
   review: "/review",
   task: ABOUT_YOU_CHECK_PATH,
@@ -75,13 +67,8 @@ const PROVINCES: ReadonlyArray<[string, string]> = [
 ];
 
 /**
- * What all four pages share: a draft seeded from the store, validation on submit,
- * and where Continue goes.
- *
- * The draft is separate from the store on purpose. Answers reach the store only on a
- * valid submit, so a half-typed postal code someone abandons by pressing Back is not
- * saved as their answer, and the task list does not start calling the section
- * "in progress" because they looked at it.
+ * A draft seeded from the store, validated on submit. Answers reach the store only on a
+ * valid submit, so a half-typed answer abandoned with Back is not saved as an answer.
  */
 function useStep(step: AboutYouStepId) {
   const [params] = useSearchParams();
@@ -89,8 +76,6 @@ function useStep(step: AboutYouStepId) {
   const { state, dispatch } = useForm();
   const config = ABOUT_YOU_STEPS[step];
 
-  // Carried in the URL rather than router state, so a refresh mid-change still
-  // returns to the page being checked instead of silently rejoining the normal run.
   const returnTo = readReturnTo(params, SUPPORTED);
 
   const [draft, setDraft] = useState<AboutYouAnswers>(
@@ -109,21 +94,20 @@ function useStep(step: AboutYouStepId) {
       return next;
     });
 
-  const errorFor = (field: AboutYouField) => errors.find((e) => e.fieldId === field)?.text;
+  const errorFor = (field: AboutYouField) =>
+    errors.find((e) => e.fieldId === field)?.text;
 
   const handleContinue = () =>
     submit(draft as Record<string, unknown>, () => {
       dispatch({ type: "save-about-you", answers: draft });
 
-      // Nothing in this section branches, so a change made from a check page can
-      // never open a question the person has not seen. They go straight back.
+      // Nothing here branches, so a change from a check page goes straight back.
       if (returnTo) {
         navigate(RETURN_PATHS[returnTo]);
         return;
       }
 
-      // Answering the last question is what brings you to the end of the task, and
-      // the end of the task is its check page rather than the task list.
+      // The last question leads to the task's check page, not the task list.
       const next = nextStep(step);
       navigate(next ? stepPath(next, null) : ABOUT_YOU_CHECK_PATH);
     });
@@ -139,17 +123,22 @@ function useStep(step: AboutYouStepId) {
     handleContinue,
     back: returnTo ? RETURN_PATHS[returnTo] : previous ? stepPath(previous, null) : "/",
     backLabel: returnTo ? RETURN_LABELS[returnTo] : "Back",
-    // A button is a contract: say what pressing it does. On the last page of the
-    // section "continue" is the check page, which is still continuing.
     continueLabel: returnTo ? "Save and return" : "Save and continue",
   };
 }
 
-/* -------------------------------------------------------------------------- */
-
 function NamePage() {
-  const { heading, draft, set, errors, errorFor, handleContinue, back, backLabel, continueLabel } =
-    useStep("name");
+  const {
+    heading,
+    draft,
+    set,
+    errors,
+    errorFor,
+    handleContinue,
+    back,
+    backLabel,
+    continueLabel,
+  } = useStep("name");
 
   return (
     <PublicFormLayout back={back} backLabel={backLabel}>
@@ -160,19 +149,9 @@ function NamePage() {
         errors={errors}
       >
         {/*
-          Every field about the applicant carries an autocomplete token, here and on
-          the three pages below.
-
-          This is a WCAG 2.2 AA requirement, not a nicety: 1.3.5 Identify Input
-          Purpose asks that a field collecting information about the person be
-          programmatically identifiable. It is also the difference between a browser
-          filling an address in one gesture and a person typing it again.
-
-          Left off, browsers do not give up — they guess from labels and names, and
-          they guess badly. Chrome reads these name fields as payment fields, which
-          is visible over plain HTTP as a warning about payment autofill on an
-          insecure connection, and invisible over HTTPS while still being wrong. The
-          warning is a symptom; the missing token is the fault.
+          autoComplete tokens on every field about the applicant, here and on the three
+          pages below: WCAG 2.2 AA 1.3.5, and without them Chrome guesses these name
+          fields as payment fields.
         */}
         <GoabFormItem label="First name" id="firstName" error={errorFor("firstName")}>
           <GoabInput
@@ -203,15 +182,21 @@ function NamePage() {
 }
 
 function DateOfBirthPage() {
-  const { heading, draft, set, errors, errorFor, handleContinue, back, backLabel, continueLabel } =
-    useStep("date-of-birth");
+  const {
+    heading,
+    draft,
+    set,
+    errors,
+    errorFor,
+    handleContinue,
+    back,
+    backLabel,
+    continueLabel,
+  } = useStep("date-of-birth");
 
   return (
     <PublicFormLayout back={back} backLabel={backLabel}>
-      {/*
-        One question, so the question is the h1 and the field carries no visible label
-        of its own — a label under the heading would ask the same thing twice.
-      */}
+      {/* One question: it is the h1, so the field carries no visible label of its own. */}
       <FormSet
         heading={heading}
         continueLabel={continueLabel}
@@ -220,21 +205,10 @@ function DateOfBirthPage() {
       >
         <GoabFormItem id="dateOfBirth" error={errorFor("dateOfBirth")}>
           {/*
-            type="input" is a month dropdown with day and year text boxes, which is the
-            right shape for a date a person already knows. The calendar variant is for
-            dates someone is picking rather than recalling; reaching a birth date
-            through it means clicking back through several hundred months.
-
-            Deliberately no `max` to block future dates. Clamping the control would
-            hide the mistake rather than prevent it, and the person would be left
-            wondering why the year would not take. The rule says so in words instead.
-
-            Unlike every other control here, this one cannot be given an accessible
-            name: GoabDatePicker exposes no ariaLabel, and it names its own inner
-            fields "month", "" and "" — the day and the year are announced as nothing.
-            So the h1 above is the only place the question is stated to a screen reader
-            user, and it is not attached to the field. That is a component gap, not
-            something this page can close.
+            type="input", not the calendar: a birth date is recalled, not picked. No
+            `max`, because clamping would hide the mistake instead of saying it. And
+            GoabDatePicker takes no ariaLabel and names its inner fields nothing, so the
+            h1 is the only place the question reaches a screen reader.
           */}
           <GoabDatePicker
             name="dateOfBirth"
@@ -250,8 +224,17 @@ function DateOfBirthPage() {
 }
 
 function ContactPage() {
-  const { heading, draft, set, errors, errorFor, handleContinue, back, backLabel, continueLabel } =
-    useStep("contact");
+  const {
+    heading,
+    draft,
+    set,
+    errors,
+    errorFor,
+    handleContinue,
+    back,
+    backLabel,
+    continueLabel,
+  } = useStep("contact");
 
   return (
     <PublicFormLayout back={back} backLabel={backLabel}>
@@ -279,12 +262,8 @@ function ContactPage() {
           />
         </GoabFormItem>
 
-        {/*
-          The only optional answer in the service, so it is the only field carrying the
-          marker. Marking the optional ones rather than the required ones is the way
-          round that matches what people already assume, which is that everything is
-          required unless told otherwise.
-        */}
+        {/* The only optional field, so the only one marked: people assume everything is
+            required unless told otherwise. */}
         <GoabFormItem
           label="Email address"
           id="email"
@@ -309,8 +288,17 @@ function ContactPage() {
 }
 
 function AddressPage() {
-  const { heading, draft, set, errors, errorFor, handleContinue, back, backLabel, continueLabel } =
-    useStep("address");
+  const {
+    heading,
+    draft,
+    set,
+    errors,
+    errorFor,
+    handleContinue,
+    back,
+    backLabel,
+    continueLabel,
+  } = useStep("address");
 
   return (
     <PublicFormLayout back={back} backLabel={backLabel}>
@@ -332,7 +320,12 @@ function AddressPage() {
           />
         </GoabFormItem>
 
-        <GoabFormItem label="Suite or unit number" id="suite" requirement="optional" mt="l">
+        <GoabFormItem
+          label="Suite or unit number"
+          id="suite"
+          requirement="optional"
+          mt="l"
+        >
           <GoabInput
             name="suite"
             ariaLabel="Suite or unit number"
@@ -355,15 +348,8 @@ function AddressPage() {
           />
         </GoabFormItem>
 
-        {/*
-          Province and postal code are stacked rather than sat side by side. Two
-          reasons, and the second is the one that decides it: a form is filled fastest
-          down a single column, and the error summary jumps through fields in order —
-          "top to bottom" stops meaning anything the moment two fields share a row.
-
-          Each is sized to what it holds rather than run full width, so the width is
-          itself a hint about the expected answer.
-        */}
+        {/* Province and postal code stack rather than share a row: the error summary
+            jumps through fields in order. Each is sized to what it holds. */}
         <GoabFormItem
           label="Province or territory"
           id="province"
@@ -373,17 +359,9 @@ function AddressPage() {
           <GoabDropdown
             name="province"
             ariaLabel="Province or territory"
-            // No autoComplete here, and its absence is measured rather than an
-            // oversight. GoabDropdown accepts the prop and does nothing with it: it
-            // renders a custom combobox rather than a native select, and hardcodes
-            // autocomplete="off" on the input inside its shadow root. Passing
-            // "address-level1" changes nothing, so it is not passed — a template is
-            // read as an example, and a prop that looks load-bearing and is inert
-            // teaches every fork to write more of them.
-            //
-            // The consequence is real: this one field cannot join the address
-            // autofill the four around it now support, and cannot satisfy WCAG 1.3.5.
-            // Raised as a draft issue against the component.
+            // No autoComplete: GoabDropdown accepts the prop and ignores it (a custom
+            // combobox with autocomplete="off" inside its shadow root), so this field
+            // cannot join the address autofill the others support.
             width="320px"
             value={draft.province ?? ""}
             error={Boolean(errorFor("province"))}
@@ -395,7 +373,12 @@ function AddressPage() {
           </GoabDropdown>
         </GoabFormItem>
 
-        <GoabFormItem label="Postal code" id="postalCode" error={errorFor("postalCode")} mt="l">
+        <GoabFormItem
+          label="Postal code"
+          id="postalCode"
+          error={errorFor("postalCode")}
+          mt="l"
+        >
           <GoabInput
             name="postalCode"
             ariaLabel="Postal code"
@@ -411,15 +394,6 @@ function AddressPage() {
   );
 }
 
-/* -------------------------------------------------------------------------- */
-
-/**
- * The task's check-answers page, and where the task actually finishes.
- *
- * The summary is the same component the whole-application review renders, told to
- * send its Change links back HERE rather than to /review — which is the reason the
- * return target is a named origin and not a constant. See lib/return-to.ts.
- */
 function CheckPage() {
   return (
     <TaskReview section="about-you">
@@ -428,28 +402,13 @@ function CheckPage() {
   );
 }
 
-/**
- * Send someone entering the section to the first page they have not finished, or to
- * this task's check page when there is nothing left — re-entering a finished section
- * means looking it over, and the page showing every answer at once is where looking
- * starts.
- */
 function SectionEntry() {
   const { state } = useForm();
   const next = firstIncompleteStep(state.aboutYou);
   return <Navigate to={next ? stepPath(next, null) : ABOUT_YOU_CHECK_PATH} replace />;
 }
 
-/**
- * Which component answers for each step.
- *
- * Typed as a record over every step id rather than written out as four <Route>
- * elements, and that is the only reason it exists: adding a step to AboutYouStepId
- * now fails the build here until it has a page, instead of silently redirecting to
- * the section entry at runtime and looking like a routing bug.
- *
- * The pages themselves are still hand-written. This is a lookup, not a renderer.
- */
+/** Typed over every step id, so adding a step fails the build until it has a page. A lookup, not a renderer. */
 const PAGES: Record<AboutYouStepId, () => ReactElement> = {
   name: NamePage,
   "date-of-birth": DateOfBirthPage,
@@ -468,7 +427,6 @@ export function AboutYouSection() {
         return <Route key={id} path={id} element={<Page />} />;
       })}
 
-      {/* A hand-typed or stale URL lands on the section entry, not a broken page. */}
       <Route path="*" element={<Navigate to={SECTION_ROOT} replace />} />
     </Routes>
   );

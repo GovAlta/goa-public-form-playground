@@ -1,9 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const LIB_DIR = dirname(fileURLToPath(import.meta.url));
+const SRC_DIR = dirname(LIB_DIR);
+const SECTIONS_DIR = join(SRC_DIR, "sections");
 
 function sourceFilesIn(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {
@@ -15,38 +17,42 @@ function sourceFilesIn(dir: string): string[] {
   });
 }
 
+function sectionRules(): string[] {
+  return readdirSync(SECTIONS_DIR)
+    .map((section) => join(SECTIONS_DIR, section, "rules.ts"))
+    .filter((file) => existsSync(file));
+}
+
 /**
- * src/lib holds the parts of this service that are about the service itself: its
- * validation rules, its section definitions, how its questions branch. None of that
- * is a React idea, and keeping React out of it is what makes those parts portable to
- * a differently-rendered version of the same service.
- *
- * That only stays true if something checks. A convention nobody can verify is a
- * convention that quietly stops being true, so this test is the mechanism rather
- * than a note in the README asking people to be careful.
- *
- * If this fails: the logic probably belongs in src/components or src/store instead.
+ * The rules are about the service, not about React, and keeping React out is what makes
+ * them portable. If this fails, the logic belongs in src/components, src/store, or the
+ * section's pages.tsx.
  */
-describe("src/lib stays framework-neutral", () => {
-  it("contains no React imports", () => {
-    const offenders = sourceFilesIn(LIB_DIR)
-      .filter((file) => /\bfrom\s+["']react(-dom|-router-dom)?["']/.test(readFileSync(file, "utf8")))
-      .map((file) => file.slice(LIB_DIR.length + 1));
+describe("src/lib and the sections' rules stay framework-neutral", () => {
+  const files = () => [...sourceFilesIn(LIB_DIR), ...sectionRules()];
+  const name = (file: string) => file.slice(SRC_DIR.length + 1);
+
+  it("contain no React imports", () => {
+    const offenders = files()
+      .filter((file) =>
+        /\bfrom\s+["']react(-dom|-router-dom)?["']/.test(readFileSync(file, "utf8")),
+      )
+      .map(name);
 
     expect(offenders).toEqual([]);
   });
 
-  it("contains no design system component imports", () => {
-    const offenders = sourceFilesIn(LIB_DIR)
+  it("contain no design system component imports", () => {
+    const offenders = files()
       .filter((file) => /\bfrom\s+["']@abgov\//.test(readFileSync(file, "utf8")))
-      .map((file) => file.slice(LIB_DIR.length + 1));
+      .map(name);
 
     expect(offenders).toEqual([]);
   });
 
   it("actually reads files, so a passing result means something", () => {
-    // Guards the two tests above. If the walker returned nothing they would both
-    // pass vacuously, and the neutrality check would be worthless without saying so.
+    // Guards the two above against passing vacuously.
     expect(sourceFilesIn(LIB_DIR).length).toBeGreaterThan(0);
+    expect(sectionRules().length).toBeGreaterThan(0);
   });
 });

@@ -4,10 +4,8 @@ import type { FieldError } from "../lib/validation";
 
 const FOCUSABLE = "input, select, textarea, button, [tabindex]:not([tabindex='-1'])";
 
-// Depth-first walk of light DOM and any open shadow roots, returning the first
-// focusable control. GoA form controls render their real input inside the web
-// component's shadow DOM (the date picker nests a dropdown one level deeper), so
-// a normal querySelector on the form item never reaches it.
+// GoA controls render their real input inside the web component's shadow DOM (the date
+// picker one level deeper), so this walks light DOM and open shadow roots.
 function findFocusable(node: ParentNode): HTMLElement | null {
   for (const child of Array.from(node.children)) {
     const el = child as HTMLElement;
@@ -23,16 +21,10 @@ function findFocusable(node: ParentNode): HTMLElement | null {
 }
 
 /**
- * Error summary for a question page ("There is a problem").
- *
- * A box listing every error on the page, each one a link that jumps to and focuses
- * its field. It pairs with the inline error on the field itself (GoabFormItem's
- * `error` prop); a page sets both.
- *
- * Deliberately not a Callout. Callouts are for guidance, not validation, and using
- * one here would make errors look like advice.
- *
- * Rendered and focus-managed by FormSet. Pages only supply the errors.
+ * Error summary for a question page ("There is a problem"): every error as a link that
+ * jumps to and focuses its field, paired with the inline error on the field. Not a
+ * Callout, because Callouts are for guidance and errors would read as advice.
+ * Rendered and focus-managed by FormSet.
  */
 export const ErrorSummary = forwardRef<HTMLDivElement, { errors: FieldError[] }>(
   function ErrorSummary({ errors }, ref) {
@@ -43,10 +35,6 @@ export const ErrorSummary = forwardRef<HTMLDivElement, { errors: FieldError[] }>
       const formItem = document.getElementById(fieldId);
       if (!formItem) return;
       formItem.scrollIntoView({ behavior: "smooth", block: "center" });
-      // GoA inputs render their real control inside the web component's (open)
-      // shadow DOM, sometimes two levels deep (date picker), so a plain
-      // querySelector can't reach it. Walk light DOM + shadow roots for the
-      // first focusable control.
       findFocusable(formItem)?.focus({ preventScroll: true });
     };
 
@@ -78,7 +66,13 @@ export const ErrorSummary = forwardRef<HTMLDivElement, { errors: FieldError[] }>
             fillColor="var(--goa-color-emergency-default)"
             ariaLabel=""
           />
-          <GoabText id="error-summary-title" tag="h2" size="heading-s" mt="none" mb="none">
+          <GoabText
+            id="error-summary-title"
+            tag="h2"
+            size="heading-s"
+            mt="none"
+            mb="none"
+          >
             There is a problem
           </GoabText>
         </div>
@@ -105,9 +99,8 @@ export const ErrorSummary = forwardRef<HTMLDivElement, { errors: FieldError[] }>
 );
 
 /**
- * Focus the error summary when it first appears (an empty -> non-empty transition),
- * so keyboard and screen-reader users land on it after a failed submit. Returns the
- * ref to put on <ErrorSummary>. Shared by FormSet and the modal/drawer item forms.
+ * Focus the error summary when it first appears, so keyboard and screen-reader users
+ * land on it after a failed submit. Returns the ref to put on <ErrorSummary>.
  */
 export function useErrorSummaryFocus(errors: FieldError[]) {
   const ref = useRef<HTMLDivElement>(null);

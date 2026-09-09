@@ -1,25 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { EMPTY_FORM, formReducer, type FormState } from "./form-state";
 
-/**
- * The reducer, tested only where getting it wrong is silent.
- *
- * Most of these actions are obvious enough that a test would restate the code. The
- * two that are not are the sections that branch: there, an action that merges instead
- * of replacing brings back answers the person has taken away, and nothing about the
- * screen would show it until the review page listed an answer to a question nobody
- * was asked.
- */
-
 const withDocuments = (documents: Partial<FormState["documents"]>): FormState => ({
   ...EMPTY_FORM,
   documents: { proofOfIncome: [], ...documents },
 });
 
 describe("submitting", () => {
-  // The two fields have to move together. A submitted application with no reference
-  // locks the person out of every editable page and then shows them a confirmation
-  // with nothing on it to write down, which is the worst of both.
+  // A submitted application with no reference locks every page and shows nothing to
+  // write down.
   it("records the time and the reference together", () => {
     const after = formReducer(EMPTY_FORM, {
       type: "submit",
@@ -31,9 +20,8 @@ describe("submitting", () => {
     expect(after.reference).toBe("FSA-4KMQ-7XTC");
   });
 
-  // Starting again has to clear the submission, not just the answers. Keeping the
-  // reference "for the person's records" would leave every editable page redirecting
-  // to a confirmation for an application that no longer exists, with no way back.
+  // Keeping the reference would leave every editable page redirecting to a
+  // confirmation for an application that no longer exists.
   it("clears the submission when starting a new application", () => {
     const submitted = formReducer(EMPTY_FORM, {
       type: "submit",
@@ -50,8 +38,6 @@ describe("submitting", () => {
 
 describe("saving a branching section", () => {
   it("replaces the documents answers rather than merging them", () => {
-    // Said yes, described it, then went back and said no. The section prunes the
-    // description before saving; a merge here would put it straight back.
     const before = withDocuments({
       hasOtherIncome: "yes",
       otherIncomeDetail: "Weekend shifts at a cafe",
@@ -69,7 +55,12 @@ describe("saving a branching section", () => {
   it("already replaces the screener answers, for the same reason", () => {
     const before: FormState = {
       ...EMPTY_FORM,
-      eligibility: { age: "yes", residency: "yes", otherSupport: "yes", otherSupportDetail: "AISH" },
+      eligibility: {
+        age: "yes",
+        residency: "yes",
+        otherSupport: "yes",
+        otherSupportDetail: "AISH",
+      },
     };
 
     const after = formReducer(before, {

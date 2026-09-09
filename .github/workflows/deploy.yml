@@ -33,21 +33,16 @@ jobs:
       - name: Test
         run: npm test
 
-      # `npm run build` runs `tsc -b` before vite, so every deploy is type-checked.
-      # VITE_BASE_PATH is derived from the repository name, which is what lets a fork
-      # deploy correctly without editing a single file.
+      # Type-checked before building. VITE_BASE_PATH comes from the repository name, so
+      # a fork deploys with no file edits.
       - name: Build
         run: npm run build
         env:
           VITE_BASE_PATH: /${{ github.event.repository.name }}/
 
-      # GitHub Pages has no server-side rewrite. Serving a copy of index.html as
-      # 404.html is what makes deep links like /review work: Pages cannot find the
-      # path, serves 404.html, and the router takes over and renders the right page.
-      #
-      # Pages returns an HTTP 404 status alongside that document by design. The page
-      # is correct; only the status code is misleading. Verify deep links by what
-      # renders, never by status code.
+      # Pages has no server-side rewrite, so index.html doubles as 404.html and deep
+      # links render. Pages sends an HTTP 404 status with it by design; check by what
+      # renders.
       - name: SPA fallback for GitHub Pages
         run: cp ./dist/index.html ./dist/404.html
 

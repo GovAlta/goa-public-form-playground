@@ -3,14 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Must match SERVICE_NAME in src/lib/service.ts. It is a separate copy because
-         the title renders before any JavaScript, which is what a bookmark saves and a
-         search result shows. scripts/readme.test.ts asserts the two stay equal. -->
+    <!-- Must match SERVICE_NAME in src/lib/service.ts; scripts/readme.test.ts asserts it. -->
     <title>[Service name]</title>
-    <!-- Vite rewrites root-absolute URLs in this file to the deploy's base path, so
-         this resolves correctly in a fork under any repository name. Note that it
-         does NOT rewrite paths inside files copied verbatim from public/, which is
-         why there is no web manifest here: its icon paths would 404 under a subpath. -->
+    <!-- Vite rewrites this root-absolute path to the deploy's base path. It does not
+         rewrite paths inside files under public/. -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <!-- GoA components render icons with ionicons, loaded here rather than bundled. -->
     <script
